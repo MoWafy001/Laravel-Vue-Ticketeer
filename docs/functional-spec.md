@@ -3,7 +3,11 @@
 - [Ticketeer Platform Functional Specification](#ticketeer-platform-functional-specification)
   - [User Roles \& Permissions](#user-roles--permissions)
     - [Venue Manager](#venue-manager)
+      - [Company-Wide Permissions](#company-wide-permissions)
+      - [Event-Specific Permissions](#event-specific-permissions)
     - [Venue Staff](#venue-staff)
+      - [Company-Wide Permissions](#company-wide-permissions-1)
+      - [Event-Specific Permissions](#event-specific-permissions-1)
     - [Buyer](#buyer)
   - [Event \& Ticket Management](#event--ticket-management)
   - [Payment \& Refunds](#payment--refunds)
@@ -13,17 +17,38 @@
 ## User Roles & Permissions
 
 ### Venue Manager
-- Create and manage events
-- Define ticket types, set prices, and specify ticket quantities
-- View detailed ticket sales statistics (sales timeline, buyer info, contact details)
-- Cancel and refund tickets as needed
-- Access a wallet to view collected funds and withdraw eligible amounts (withdrawals only for non-refundable tickets after event completion)
-- Specify event details: name, date/time, and ticket sales period (start/end dates)
+- Invited/hired as a company organizer
+- Permissions are divided into company-wide and event-specific
+
+#### Company-Wide Permissions
+- Access company dashboard and analytics
+- Manage staff accounts and assign roles/permissions
+- View and manage company profile and settings
+- Create events
+
+#### Event-Specific Permissions
+- Edit event details
+- Create and manage ticket types for events
+- View event statistics and ticket sales
+- View buyer contact information for event attendees
+- Cancel and refund tickets for specific events
 
 ### Venue Staff
-- Invited/hired by venue manager
-- Granted permissions to access or create venues and perform venue management tasks
-- Permissions are configurable and may be limited by the venue manager
+- Invited/hired by company organizer
+- Permissions are configurable and may be limited by the organizer
+
+#### Company-Wide Permissions
+- Access company dashboard and analytics (if granted)
+- View company profile and settings (if granted)
+
+#### Event-Specific Permissions
+- Edit event details
+- Create and manage ticket types for events
+- View event statistics and ticket sales
+- View buyer contact information for event attendees
+- Cancel and refund tickets for specific events
+- Manage event attendees
+- Access wallet and view collected funds for specific events (withdrawal permission optional)
 
 ### Buyer
 - Browse events without authentication
