@@ -131,13 +131,8 @@ function showAlert(type, message) {
 }
 
 const route = useRoute()
-const cartStore = useCartStore()
 
 onMounted(() => {
-  // Clear cart if redirected from Stripe success
-  if (route.query.success === 'true') {
-    cartStore.clearCart()
-  }
   loadTickets()
 })
 </script>

@@ -34,11 +34,15 @@ class PaymentController extends Controller
             'buyer_id' => $buyer->id,
             'provider' => 'stripe',
             'status' => 'pending',
-            'transaction_id' => Str::random(32), // Placeholder for Stripe Session ID
+            'transaction_id' => Str::random(32), // Placeholder
         ]);
 
-        // Integrate with Stripe here
+        // Integrate with Stripe
         Stripe::setApiKey(config('services.stripe.secret'));
+        
+        // Base return URL from request or config
+        $baseUrl = $request->return_url ?? config('app.frontend_url') . '/payment/callback';
+        
         $session = Session::create([
             'payment_method_types' => ['card'],
             'line_items' => [
@@ -54,26 +58,70 @@ class PaymentController extends Controller
                 ],
             ],
             'mode' => 'payment',
-            'success_url' => $request->return_url ?? config('app.url') . '/my-tickets?success=true',
-            'cancel_url' => $request->return_url ?? config('app.url') . '/my-tickets?cancel=true',
+            // Add session_id to the URL so we can verify it on return
+            'success_url' => $baseUrl . '?session_id={CHECKOUT_SESSION_ID}&order_id=' . $order->id,
+            'cancel_url' => $baseUrl . '?cancel=true&order_id=' . $order->id,
             'metadata' => [
                 'order_id' => $order->id,
                 'payment_id' => $payment->id,
             ],
         ]);
+        
         $payment->transaction_id = $session->id;
         $payment->save();
 
         return JsonResponse::created('Payment session created', [
             'payment_id' => $payment->id,
             'order_id' => $order->id,
-            'provider' => 'stripe',
-            'status' => 'pending',
-            'amount' => $order->amount,
             'checkout_url' => $session->url,
             'session_id' => $session->id,
-            'expires_at' => now()->addHour(),
         ]);
+    }
+
+    public function verify(Request $request)
+    {
+        $request->validate([
+            'session_id' => 'required|string',
+        ]);
+
+        $sessionId = $request->session_id;
+
+        Stripe::setApiKey(config('services.stripe.secret'));
+        
+        try {
+            $session = Session::retrieve($sessionId);
+        } catch (\Exception $e) {
+            return JsonResponse::error('Invalid Stripe Session', null, 400);
+        }
+
+        $payment = Payment::where('transaction_id', $sessionId)->first();
+
+        if (!$payment) {
+            return JsonResponse::error('Payment not found', null, 404);
+        }
+
+        if ($session->payment_status === 'paid') {
+            // Update Payment
+            if ($payment->status !== 'completed') {
+                $payment->status = 'completed';
+                $payment->save();
+
+                // Update Order
+                $order = $payment->order;
+                $order->status = 'completed';
+                $order->save();
+
+                // Update Tickets
+                $order->tickets()->update(['status' => 'valid']);
+            }
+            
+            return JsonResponse::success('Payment verified successfully', [
+                'status' => 'completed',
+                'order_id' => $payment->order_id
+            ]);
+        }
+
+        return JsonResponse::error('Payment not completed', ['status' => $session->payment_status], 400);
     }
 
     public function webhook(Request $request)

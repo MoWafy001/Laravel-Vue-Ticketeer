@@ -94,6 +94,7 @@ Route::middleware(['auth:buyer'])->group(function () {
 
     // Payments
     Route::post('payments/checkout', [PaymentController::class, 'checkout']);
+    Route::post('payments/verify', [PaymentController::class, 'verify']);
     Route::get('payments/{id}', [PaymentController::class, 'show']);
 });
 

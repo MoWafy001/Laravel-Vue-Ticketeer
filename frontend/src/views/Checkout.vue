@@ -96,12 +96,10 @@ async function handleCheckout() {
     const paymentResponse = await api.post('/payments/checkout', {
       order_id: orderId,
       payment_method: 'stripe',
-      return_url: window.location.origin + '/my-tickets',
+      return_url: window.location.origin + '/payment/callback',
     })
     const checkoutUrl = paymentResponse.data.data.checkout_url
     window.location.href = checkoutUrl
-
-    // Remove success.value = true and cartStore.clearCart here, as Stripe will redirect after payment
   } catch (err) {
     error.value = err.response?.data?.message || 'Checkout failed. Please try again.'
   } finally {
