@@ -26,13 +26,15 @@ class AuthController extends Controller
             'password' => Hash::make($request->password),
         ]);
 
-        $token = auth('organizer')->login($organizer);
+        /** @var \PHPOpenSourceSaver\JWTAuth\JWTGuard $guard */
+        $guard = auth('organizer');
+        $token = $guard->login($organizer);
 
         return JsonResponse::created('Organizer registered successfully', [
             'organizer' => $organizer,
             'token' => $token,
             'token_type' => 'Bearer',
-            'expires_in' => auth('organizer')->factory()->getTTL() * 60,
+            'expires_in' => $guard->factory()->getTTL() * 60,
         ]);
     }
 
@@ -45,17 +47,19 @@ class AuthController extends Controller
 
         $credentials = $request->only('email', 'password');
 
-        if (!$token = auth('organizer')->attempt($credentials)) {
+        /** @var \PHPOpenSourceSaver\JWTAuth\JWTGuard $guard */
+        $guard = auth('organizer');
+        if (!$token = $guard->attempt($credentials)) {
             throw ValidationException::withMessages([
                 'email' => ['Invalid credentials'],
             ]);
         }
 
         return JsonResponse::success('Login successful', [
-            'user' => auth('organizer')->user(),
+            'user' => $guard->user(),
             'token' => $token,
             'token_type' => 'Bearer',
-            'expires_in' => auth('organizer')->factory()->getTTL() * 60,
+            'expires_in' => $guard->factory()->getTTL() * 60,
         ]);
     }
 
@@ -73,13 +77,15 @@ class AuthController extends Controller
             'password' => Hash::make($request->password),
         ]);
 
-        $token = auth('buyer')->login($buyer);
+        /** @var \PHPOpenSourceSaver\JWTAuth\JWTGuard $guard */
+        $guard = auth('buyer');
+        $token = $guard->login($buyer);
 
         return JsonResponse::created('Buyer registered successfully', [
             'buyer' => $buyer,
             'token' => $token,
             'token_type' => 'Bearer',
-            'expires_in' => auth('buyer')->factory()->getTTL() * 60,
+            'expires_in' => $guard->factory()->getTTL() * 60,
         ]);
     }
 
@@ -92,17 +98,19 @@ class AuthController extends Controller
 
         $credentials = $request->only('email', 'password');
 
-        if (!$token = auth('buyer')->attempt($credentials)) {
+        /** @var \PHPOpenSourceSaver\JWTAuth\JWTGuard $guard */
+        $guard = auth('buyer');
+        if (!$token = $guard->attempt($credentials)) {
             throw ValidationException::withMessages([
                 'email' => ['Invalid credentials'],
             ]);
         }
 
         return JsonResponse::success('Login successful', [
-            'buyer' => auth('buyer')->user(),
+            'buyer' => $guard->user(),
             'token' => $token,
             'token_type' => 'Bearer',
-            'expires_in' => auth('buyer')->factory()->getTTL() * 60,
+            'expires_in' => $guard->factory()->getTTL() * 60,
         ]);
     }
 
