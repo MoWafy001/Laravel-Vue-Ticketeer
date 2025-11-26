@@ -3,11 +3,11 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Http\Responses\JsonResponse; // Added this line
 
 use App\Models\Order;
 use App\Models\Payment;
-use Illuminate\Http\Request;
-use Illuminate\Support\Str;
+use Illuminate\Support\Str; // Removed duplicate Illuminate\Http\Request
 
 class PaymentController extends Controller
 {
@@ -22,10 +22,7 @@ class PaymentController extends Controller
         $order = $request->user()->orders()->findOrFail($request->order_id);
 
         if ($order->status !== 'pending') {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Order is not pending payment',
-            ], 400);
+            return JsonResponse::error('Order is not pending payment', null, 400);
         }
 
         // Create Payment record
@@ -41,20 +38,16 @@ class PaymentController extends Controller
         // $stripe = new \Stripe\StripeClient(config('services.stripe.secret'));
         // $session = $stripe->checkout->sessions->create([...]);
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Payment session created',
-            'data' => [
-                'payment_id' => $payment->id,
-                'order_id' => $order->id,
-                'provider' => 'stripe',
-                'status' => 'pending',
-                'amount' => $order->amount,
-                'checkout_url' => 'https://checkout.stripe.com/test/' . $payment->transaction_id, // Placeholder
-                'session_id' => $payment->transaction_id,
-                'expires_at' => now()->addHour(),
-            ],
-        ], 201);
+        return JsonResponse::created('Payment session created', [
+            'payment_id' => $payment->id,
+            'order_id' => $order->id,
+            'provider' => 'stripe',
+            'status' => 'pending',
+            'amount' => $order->amount,
+            'checkout_url' => 'https://checkout.stripe.com/test/' . $payment->transaction_id, // Placeholder
+            'session_id' => $payment->transaction_id,
+            'expires_at' => now()->addHour(),
+        ]);
     }
 
     public function webhook(Request $request)
@@ -76,20 +69,13 @@ class PaymentController extends Controller
         //     $payment->order->tickets()->update(['status' => 'valid']);
         // }
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Webhook processed',
-        ]);
+        return JsonResponse::success('Webhook processed');
     }
 
     public function show(Request $request, string $id)
     {
         $payment = Payment::with('order')->where('buyer_id', $request->user()->id)->findOrFail($id);
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Payment retrieved successfully',
-            'data' => $payment,
-        ]);
+        return JsonResponse::success('Payment retrieved successfully', $payment);
     }
 }

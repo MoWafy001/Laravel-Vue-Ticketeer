@@ -4,9 +4,9 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 
+use App\Http\Responses\JsonResponse;
 use App\Models\Buyer;
 use App\Models\BoughtTicket;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -15,11 +15,7 @@ class BuyerController extends Controller
 {
     public function profile(Request $request)
     {
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Profile retrieved successfully',
-            'data' => $request->user(),
-        ]);
+        return JsonResponse::success('Profile retrieved successfully', $request->user());
     }
 
     public function updateProfile(Request $request)
@@ -41,10 +37,7 @@ class BuyerController extends Controller
 
         if ($request->has('current_password')) {
             if (!Hash::check($request->current_password, $buyer->password)) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Invalid current password',
-                ], 422);
+                return JsonResponse::error('Invalid current password', null, 422);
             }
         }
 
@@ -62,11 +55,7 @@ class BuyerController extends Controller
 
         $buyer->save();
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Profile updated successfully',
-            'data' => $buyer,
-        ]);
+        return JsonResponse::success('Profile updated successfully', $buyer);
     }
 
     public function index(Request $request)
@@ -81,18 +70,13 @@ class BuyerController extends Controller
 
         $tickets = $query->paginate($request->query('per_page', 20));
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Tickets retrieved successfully',
-            'data' => $tickets->items(),
-            'meta' => [
-                'pagination' => [
-                    'current_page' => $tickets->currentPage(),
-                    'per_page' => $tickets->perPage(),
-                    'total' => $tickets->total(),
-                    'total_pages' => $tickets->lastPage(),
-                    'has_more' => $tickets->hasMorePages(),
-                ],
+        return JsonResponse::success('Tickets retrieved successfully', $tickets->items(), 200, [
+            'pagination' => [
+                'current_page' => $tickets->currentPage(),
+                'per_page' => $tickets->perPage(),
+                'total' => $tickets->total(),
+                'total_pages' => $tickets->lastPage(),
+                'has_more' => $tickets->hasMorePages(),
             ],
         ]);
     }
@@ -101,11 +85,7 @@ class BuyerController extends Controller
     {
         $ticket = $request->user()->tickets()->with(['ticket.event.company'])->findOrFail($id);
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Ticket retrieved successfully',
-            'data' => $ticket,
-        ]);
+        return JsonResponse::success('Ticket retrieved successfully', $ticket);
     }
 
     public function downloadPdf(Request $request, string $id)
@@ -129,10 +109,7 @@ class BuyerController extends Controller
         $ticket = $request->user()->tickets()->findOrFail($id);
 
         if ($ticket->status !== 'valid') {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Ticket cannot be cancelled',
-            ], 400);
+            return JsonResponse::error('Ticket cannot be cancelled', null, 400);
         }
 
         // Check refund deadline logic here
@@ -142,14 +119,10 @@ class BuyerController extends Controller
 
         // Trigger refund logic here
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Ticket cancelled and refund initiated',
-            'data' => [
-                'ticket_id' => $ticket->id,
-                'status' => 'cancelled',
-                'refund_status' => 'pending',
-            ],
+        return JsonResponse::success('Ticket cancelled and refund initiated', [
+            'ticket_id' => $ticket->id,
+            'status' => 'cancelled',
+            'refund_status' => 'pending',
         ]);
     }
 }

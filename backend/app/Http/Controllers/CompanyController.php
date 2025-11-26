@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 
+use App\Http\Responses\JsonResponse;
 use App\Models\Company;
+use Illuminate\Http\Request;
 
 class CompanyController extends Controller
 {
@@ -12,18 +14,13 @@ class CompanyController extends Controller
     {
         $companies = $request->user()->companies()->paginate($request->query('per_page', 20));
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Companies retrieved successfully',
-            'data' => $companies->items(),
-            'meta' => [
-                'pagination' => [
-                    'current_page' => $companies->currentPage(),
-                    'per_page' => $companies->perPage(),
-                    'total' => $companies->total(),
-                    'total_pages' => $companies->lastPage(),
-                    'has_more' => $companies->hasMorePages(),
-                ],
+        return JsonResponse::success('Companies retrieved successfully', $companies->items(), 200, [
+            'pagination' => [
+                'current_page' => $companies->currentPage(),
+                'per_page' => $companies->perPage(),
+                'total' => $companies->total(),
+                'total_pages' => $companies->lastPage(),
+                'has_more' => $companies->hasMorePages(),
             ],
         ]);
     }
@@ -38,22 +35,14 @@ class CompanyController extends Controller
             'name' => $request->name,
         ]);
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Company created successfully',
-            'data' => $company,
-        ], 201);
+        return JsonResponse::created('Company created successfully', $company);
     }
 
     public function show(Request $request, string $id)
     {
         $company = $request->user()->companies()->withCount(['members', 'events'])->findOrFail($id);
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Company retrieved successfully',
-            'data' => $company,
-        ]);
+        return JsonResponse::success('Company retrieved successfully', $company);
     }
 
     public function update(Request $request, string $id)
@@ -68,11 +57,7 @@ class CompanyController extends Controller
             'name' => $request->name,
         ]);
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Company updated successfully',
-            'data' => $company,
-        ]);
+        return JsonResponse::success('Company updated successfully', $company);
     }
 
     public function destroy(Request $request, string $id)
@@ -81,10 +66,7 @@ class CompanyController extends Controller
 
         $company->delete();
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Company deleted successfully',
-        ]);
+        return JsonResponse::success('Company deleted successfully');
     }
 
     public function analytics(Request $request, string $id)
@@ -102,10 +84,6 @@ class CompanyController extends Controller
             'past_events' => $company->events()->where('end_time', '<', now())->count(),
         ];
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Analytics retrieved successfully',
-            'data' => $analytics,
-        ]);
+        return JsonResponse::success('Analytics retrieved successfully', $analytics);
     }
 }

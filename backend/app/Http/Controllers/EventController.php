@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-
+use App\Http\Responses\JsonResponse;
 use App\Models\Event;
 
 class EventController extends Controller
@@ -56,18 +56,13 @@ class EventController extends Controller
 
         $events = $query->paginate($request->query('per_page', 20));
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Events retrieved successfully',
-            'data' => $events->items(),
-            'meta' => [
-                'pagination' => [
-                    'current_page' => $events->currentPage(),
-                    'per_page' => $events->perPage(),
-                    'total' => $events->total(),
-                    'total_pages' => $events->lastPage(),
-                    'has_more' => $events->hasMorePages(),
-                ],
+        return JsonResponse::success('Events retrieved successfully', $events->items(), 200, [
+            'pagination' => [
+                'current_page' => $events->currentPage(),
+                'per_page' => $events->perPage(),
+                'total' => $events->total(),
+                'total_pages' => $events->lastPage(),
+                'has_more' => $events->hasMorePages(),
             ],
         ]);
     }
@@ -90,28 +85,20 @@ class EventController extends Controller
             // Check membership
             $membership = $request->user()->companyMemberships()->where('company_id', $request->company_id)->first();
             if (!$membership || (!$membership->can_create_events && !$membership->can_manage_all_events)) {
-                return response()->json(['message' => 'Unauthorized'], 403);
+                return JsonResponse::error('Unauthorized', null, 403);
             }
         }
 
         $event = Event::create($request->all());
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Event created successfully',
-            'data' => $event,
-        ], 201);
+        return JsonResponse::created('Event created successfully', $event);
     }
 
     public function show(string $id)
     {
         $event = Event::with(['company', 'tickets'])->findOrFail($id);
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Event retrieved successfully',
-            'data' => $event,
-        ]);
+        return JsonResponse::success('Event retrieved successfully', $event);
     }
 
     public function update(Request $request, string $id)
@@ -132,11 +119,7 @@ class EventController extends Controller
 
         $event->update($request->all());
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Event updated successfully',
-            'data' => $event,
-        ]);
+        return JsonResponse::success('Event updated successfully', $event);
     }
 
     public function destroy(Request $request, string $id)
@@ -144,10 +127,7 @@ class EventController extends Controller
         $event = Event::findOrFail($id);
         $event->delete();
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Event deleted successfully',
-        ]);
+        return JsonResponse::success('Event deleted successfully');
     }
 
     public function analytics(Request $request, string $id)
@@ -164,11 +144,7 @@ class EventController extends Controller
             'total_revenue' => 0, // Implement
         ];
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Event analytics retrieved successfully',
-            'data' => $analytics,
-        ]);
+        return JsonResponse::success('Event analytics retrieved successfully', $analytics);
     }
 
     public function attendees(Request $request, string $id)
@@ -177,18 +153,13 @@ class EventController extends Controller
 
         $attendees = $event->boughtTickets()->with('buyer')->paginate($request->query('per_page', 20));
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Attendees retrieved successfully',
-            'data' => $attendees->items(),
-            'meta' => [
-                'pagination' => [
-                    'current_page' => $attendees->currentPage(),
-                    'per_page' => $attendees->perPage(),
-                    'total' => $attendees->total(),
-                    'total_pages' => $attendees->lastPage(),
-                    'has_more' => $attendees->hasMorePages(),
-                ],
+        return JsonResponse::success('Attendees retrieved successfully', $attendees->items(), 200, [
+            'pagination' => [
+                'current_page' => $attendees->currentPage(),
+                'per_page' => $attendees->perPage(),
+                'total' => $attendees->total(),
+                'total_pages' => $attendees->lastPage(),
+                'has_more' => $attendees->hasMorePages(),
             ],
         ]);
     }

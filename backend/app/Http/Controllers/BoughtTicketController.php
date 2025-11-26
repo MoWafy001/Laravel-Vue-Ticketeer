@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 
+use App\Http\Responses\JsonResponse;
 use App\Models\BoughtTicket;
 use Illuminate\Http\Request;
 
@@ -25,16 +26,12 @@ class BoughtTicketController extends Controller
 
         // Trigger refund logic
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Ticket cancelled successfully',
-            'data' => [
-                'ticket_id' => $ticket->id,
-                'status' => 'cancelled',
-                'refund_amount' => $ticket->ticket->price, // Simplified
-                'cancelled_at' => now(),
-                'cancelled_by' => 'organizer',
-            ],
+        return JsonResponse::success('Ticket cancelled successfully', [
+            'ticket_id' => $ticket->id,
+            'status' => 'cancelled',
+            'refund_amount' => $ticket->ticket->price, // Simplified
+            'cancelled_at' => now(),
+            'cancelled_by' => 'organizer',
         ]);
     }
 
@@ -47,43 +44,30 @@ class BoughtTicketController extends Controller
         $ticket = BoughtTicket::with(['ticket.event', 'buyer'])->where('qr_code', $request->qr_code)->first();
 
         if (!$ticket) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Invalid ticket',
-            ], 404);
+            return JsonResponse::error('Invalid ticket', null, 404);
         }
 
         // Check if event is today, etc.
 
         if ($ticket->status !== 'valid') {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Ticket is not valid (Status: ' . $ticket->status . ')',
-            ], 400);
+            return JsonResponse::error('Ticket is not valid (Status: ' . $ticket->status . ')', null, 400);
         }
 
         if ($ticket->used_at) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Ticket already used at ' . $ticket->used_at,
-            ], 400);
+            return JsonResponse::error('Ticket already used at ' . $ticket->used_at, null, 400);
         }
 
         $ticket->used_at = now();
         $ticket->save();
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Ticket validated successfully',
-            'data' => [
-                'ticket_id' => $ticket->id,
-                'valid' => true,
-                'status' => 'valid',
-                'used_at' => $ticket->used_at,
-                'buyer' => $ticket->buyer,
-                'ticket_type' => $ticket->ticket->type,
-                'event' => $ticket->ticket->event,
-            ],
+        return JsonResponse::success('Ticket validated successfully', [
+            'ticket_id' => $ticket->id,
+            'valid' => true,
+            'status' => 'valid',
+            'used_at' => $ticket->used_at,
+            'buyer' => $ticket->buyer,
+            'ticket_type' => $ticket->ticket->type,
+            'event' => $ticket->ticket->event,
         ]);
     }
 }

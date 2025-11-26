@@ -4,10 +4,10 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 
+use App\Http\Responses\JsonResponse;
 use App\Models\Order;
 use App\Models\Ticket;
 use App\Models\BoughtTicket;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -64,17 +64,10 @@ class OrderController extends Controller
                     ]);
                 }
 
-                return response()->json([
-                    'status' => 'success',
-                    'message' => 'Order created successfully',
-                    'data' => $order->load('tickets'),
-                ], 201);
+                return JsonResponse::created('Order created successfully', $order->load('tickets'));
             });
         } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => $e->getMessage(),
-            ], 400);
+            return JsonResponse::error($e->getMessage(), null, 400);
         }
     }
 
@@ -82,18 +75,13 @@ class OrderController extends Controller
     {
         $orders = $request->user()->orders()->withCount('tickets')->paginate($request->query('per_page', 20));
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Orders retrieved successfully',
-            'data' => $orders->items(),
-            'meta' => [
-                'pagination' => [
-                    'current_page' => $orders->currentPage(),
-                    'per_page' => $orders->perPage(),
-                    'total' => $orders->total(),
-                    'total_pages' => $orders->lastPage(),
-                    'has_more' => $orders->hasMorePages(),
-                ],
+        return JsonResponse::success('Orders retrieved successfully', $orders->items(), 200, [
+            'pagination' => [
+                'current_page' => $orders->currentPage(),
+                'per_page' => $orders->perPage(),
+                'total' => $orders->total(),
+                'total_pages' => $orders->lastPage(),
+                'has_more' => $orders->hasMorePages(),
             ],
         ]);
     }
@@ -102,10 +90,6 @@ class OrderController extends Controller
     {
         $order = $request->user()->orders()->with(['tickets.ticket.event', 'payment'])->findOrFail($id);
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Order retrieved successfully',
-            'data' => $order,
-        ]);
+        return JsonResponse::success('Order retrieved successfully', $order);
     }
 }

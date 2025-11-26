@@ -4,9 +4,9 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 
+use App\Http\Responses\JsonResponse;
 use App\Models\Event;
 use App\Models\EventsMember;
-use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 class EventMemberController extends Controller
@@ -19,11 +19,7 @@ class EventMemberController extends Controller
 
         $members = $event->members()->with('member.organizer')->get();
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Event members retrieved successfully',
-            'data' => $members,
-        ]);
+        return JsonResponse::success('Event members retrieved successfully', $members);
     }
 
     public function store(Request $request, string $event_id)
@@ -54,11 +50,7 @@ class EventMemberController extends Controller
 
         $eventMember = $event->members()->create($request->all());
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Member assigned to event successfully',
-            'data' => $eventMember->load('member.organizer'),
-        ], 201);
+        return JsonResponse::created('Member assigned to event successfully', $eventMember->load('member.organizer'));
     }
 
     public function update(Request $request, string $event_id, string $member_id)
@@ -86,11 +78,7 @@ class EventMemberController extends Controller
             'can_scan_tickets',
         ]));
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Event member permissions updated successfully',
-            'data' => $eventMember,
-        ]);
+        return JsonResponse::success('Event member permissions updated successfully', $eventMember);
     }
 
     public function destroy(Request $request, string $event_id, string $member_id)
@@ -102,9 +90,6 @@ class EventMemberController extends Controller
 
         $eventMember->delete();
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Member removed from event successfully',
-        ]);
+        return JsonResponse::success('Member removed from event successfully');
     }
 }

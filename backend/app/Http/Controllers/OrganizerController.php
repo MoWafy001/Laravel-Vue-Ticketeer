@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 
+use App\Http\Responses\JsonResponse;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 
@@ -11,11 +12,7 @@ class OrganizerController extends Controller
 {
     public function profile(Request $request)
     {
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Profile retrieved successfully',
-            'data' => $request->user(),
-        ]);
+        return JsonResponse::success('Profile retrieved successfully', $request->user());
     }
 
     public function updateProfile(Request $request)
@@ -37,10 +34,7 @@ class OrganizerController extends Controller
 
         if ($request->has('current_password')) {
             if (!Hash::check($request->current_password, $organizer->password)) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Invalid current password',
-                ], 422);
+                return JsonResponse::error('Invalid current password', null, 422);
             }
         }
 
@@ -58,10 +52,6 @@ class OrganizerController extends Controller
 
         $organizer->save();
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Profile updated successfully',
-            'data' => $organizer,
-        ]);
+        return JsonResponse::success('Profile updated successfully', $organizer);
     }
 }

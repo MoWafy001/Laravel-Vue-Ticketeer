@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 
+use App\Http\Responses\JsonResponse;
 use App\Models\Organizer;
 use App\Models\Buyer;
 use Illuminate\Support\Facades\Hash;
@@ -27,15 +28,11 @@ class AuthController extends Controller
 
         $token = $organizer->createToken('auth_token', ['organizer'])->plainTextToken;
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Organizer registered successfully',
-            'data' => [
-                'organizer' => $organizer,
-                'token' => $token,
-                'token_type' => 'Bearer',
-            ],
-        ], 201);
+        return JsonResponse::created('Organizer registered successfully', [
+            'organizer' => $organizer,
+            'token' => $token,
+            'token_type' => 'Bearer',
+        ]);
     }
 
     public function loginOrganizer(Request $request)
@@ -55,14 +52,10 @@ class AuthController extends Controller
 
         $token = $organizer->createToken('auth_token', ['organizer'])->plainTextToken;
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Login successful',
-            'data' => [
-                'user' => $organizer,
-                'token' => $token,
-                'token_type' => 'Bearer',
-            ],
+        return JsonResponse::success('Login successful', [
+            'user' => $organizer,
+            'token' => $token,
+            'token_type' => 'Bearer',
         ]);
     }
 
@@ -82,15 +75,11 @@ class AuthController extends Controller
 
         $token = $buyer->createToken('auth_token', ['buyer'])->plainTextToken;
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Buyer registered successfully',
-            'data' => [
-                'buyer' => $buyer,
-                'token' => $token,
-                'token_type' => 'Bearer',
-            ],
-        ], 201);
+        return JsonResponse::created('Buyer registered successfully', [
+            'buyer' => $buyer,
+            'token' => $token,
+            'token_type' => 'Bearer',
+        ]);
     }
 
     public function loginBuyer(Request $request)
@@ -110,14 +99,10 @@ class AuthController extends Controller
 
         $token = $buyer->createToken('auth_token', ['buyer'])->plainTextToken;
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Login successful',
-            'data' => [
-                'buyer' => $buyer,
-                'token' => $token,
-                'token_type' => 'Bearer',
-            ],
+        return JsonResponse::success('Login successful', [
+            'buyer' => $buyer,
+            'token' => $token,
+            'token_type' => 'Bearer',
         ]);
     }
 
@@ -125,9 +110,6 @@ class AuthController extends Controller
     {
         $request->user()->currentAccessToken()->delete();
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Logged out successfully',
-        ]);
+        return JsonResponse::success('Logged out successfully');
     }
 }

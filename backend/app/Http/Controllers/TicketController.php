@@ -4,9 +4,9 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 
+use App\Http\Responses\JsonResponse;
 use App\Models\Ticket;
 use App\Models\Event;
-use Illuminate\Http\Request;
 
 class TicketController extends Controller
 {
@@ -22,11 +22,7 @@ class TicketController extends Controller
                 return $ticket;
             });
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Ticket types retrieved successfully',
-            'data' => $tickets,
-        ]);
+        return JsonResponse::success('Ticket types retrieved successfully', $tickets);
     }
 
     public function store(Request $request, string $event_id)
@@ -44,19 +40,12 @@ class TicketController extends Controller
 
         // Manual unique check for code within event
         if ($event->tickets()->where('code', $request->code)->exists()) {
-            return response()->json([
-                'message' => 'The code has already been taken for this event.',
-                'errors' => ['code' => ['The code has already been taken for this event.']],
-            ], 422);
+            return JsonResponse::error('The code has already been taken for this event.', ['code' => ['The code has already been taken for this event.']], 422);
         }
 
         $ticket = $event->tickets()->create($request->all());
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Ticket type created successfully',
-            'data' => $ticket,
-        ], 201);
+        return JsonResponse::created('Ticket type created successfully', $ticket);
     }
 
     public function show(string $id)
@@ -64,11 +53,7 @@ class TicketController extends Controller
         $ticket = Ticket::with('event')->withCount(['boughtTickets as sold'])->findOrFail($id);
         $ticket->available = $ticket->quantity - $ticket->sold;
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Ticket type retrieved successfully',
-            'data' => $ticket,
-        ]);
+        return JsonResponse::success('Ticket type retrieved successfully', $ticket);
     }
 
     public function update(Request $request, string $id)
@@ -86,20 +71,13 @@ class TicketController extends Controller
 
         if ($request->has('code') && $request->code !== $ticket->code) {
             if ($ticket->event->tickets()->where('code', $request->code)->exists()) {
-                return response()->json([
-                    'message' => 'The code has already been taken for this event.',
-                    'errors' => ['code' => ['The code has already been taken for this event.']],
-                ], 422);
+                return JsonResponse::error('The code has already been taken for this event.', ['code' => ['The code has already been taken for this event.']], 422);
             }
         }
 
         $ticket->update($request->all());
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Ticket type updated successfully',
-            'data' => $ticket,
-        ]);
+        return JsonResponse::success('Ticket type updated successfully', $ticket);
     }
 
     public function destroy(string $id)
@@ -107,17 +85,11 @@ class TicketController extends Controller
         $ticket = Ticket::withCount(['boughtTickets as sold'])->findOrFail($id);
 
         if ($ticket->sold > 0) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Cannot delete ticket type with sold tickets',
-            ], 400);
+            return JsonResponse::error('Cannot delete ticket type with sold tickets', null, 400);
         }
 
         $ticket->delete();
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Ticket type deleted successfully',
-        ]);
+        return JsonResponse::success('Ticket type deleted successfully');
     }
 }
