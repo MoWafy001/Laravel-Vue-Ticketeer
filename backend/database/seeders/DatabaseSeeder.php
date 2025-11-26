@@ -337,6 +337,7 @@ class DatabaseSeeder extends Seeder
                             'status' => 'active',
                             'valid_until' => $event->end_time->copy()->addDays(1),
                             'used_at' => $isUsed ? $event->start_time->copy()->addHours(rand(0, 3)) : null,
+                            'qr_code' => Str::random(32),
                         ]);
 
                         $boughtTicketCount++;

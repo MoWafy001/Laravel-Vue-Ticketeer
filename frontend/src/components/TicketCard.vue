@@ -1,14 +1,18 @@
 <template>
-  <div class="card">
+  <div class="card print-card" :class="{ 'print-mode': printMode }">
     <div class="flex flex-col md:flex-row gap-6">
       <!-- QR Code Section -->
       <div class="flex-shrink-0">
         <div class="bg-white p-4 rounded-lg border-2 border-gray-200">
           <qrcode-vue
+            v-if="ticket.qr_code"
             :value="ticket.qr_code"
             :size="180"
             level="H"
           />
+          <div v-else class="text-gray-400 text-sm text-center py-8">
+            No QR code available
+          </div>
         </div>
         <div class="mt-3 text-center">
           <span :class="[
@@ -31,15 +35,6 @@
               {{ ticket.ticket?.event?.company?.name }}
             </p>
           </div>
-          <button
-            v-if="showDownload"
-            @click="downloadPDF"
-            class="btn btn-secondary flex items-center gap-2"
-            :disabled="downloading"
-          >
-            <ArrowDownTrayIcon class="h-5 w-5" />
-            {{ downloading ? 'Downloading...' : 'Download PDF' }}
-          </button>
         </div>
 
         <div class="grid grid-cols-2 gap-4 mb-4">
@@ -62,37 +57,12 @@
             <p class="font-semibold">{{ formatDate(ticket.purchased_at) }}</p>
           </div>
         </div>
-
-        <!-- Time remaining -->
-        <div v-if="ticket.status === 'valid' && ticket.time_remaining" class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-          <p class="text-sm text-blue-800">
-            <span class="font-semibold">Time until event:</span> {{ ticket.time_remaining }}
-          </p>
-        </div>
-
-        <!-- Used status -->
-        <div v-if="ticket.used_at" class="mb-4 p-3 bg-gray-50 border border-gray-200 rounded-lg">
-          <p class="text-sm text-gray-700">
-            <span class="font-semibold">Used on:</span> {{ formatDateTime(ticket.used_at) }}
-          </p>
-        </div>
-
-        <!-- Refund section -->
-        <div v-if="ticket.can_refund && ticket.status === 'valid'" class="mt-4 pt-4 border-t border-gray-200">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm font-medium text-gray-700">Eligible for refund</p>
-              <p class="text-xs text-gray-500">Until {{ formatDate(ticket.refund_deadline) }}</p>
-            </div>
-            <button
-              @click="$emit('cancel')"
-              class="btn bg-red-600 text-white hover:bg-red-700"
-            >
-              Cancel & Refund
-            </button>
-          </div>
-        </div>
       </div>
+    </div>
+    <div class="flex justify-end mt-6">
+      <button class="btn btn-primary" @click="printTicket">
+        Print Ticket
+      </button>
     </div>
   </div>
 </template>
@@ -117,6 +87,7 @@ const props = defineProps({
 defineEmits(['cancel'])
 
 const downloading = ref(false)
+const printMode = ref(false)
 
 const statusClass = computed(() => {
   const classes = {
@@ -158,13 +129,20 @@ async function downloadPDF() {
   downloading.value = true
   try {
     const response = await ticketsApi.downloadTicketPDF(props.ticket.id)
-    const url = window.URL.createObjectURL(new Blob([response.data]))
+    // Ensure response is a valid PDF blob
+    const blob = new Blob([response.data], { type: 'application/pdf' })
+    if (blob.size < 1000) {
+      alert('PDF file is invalid. Please contact support.')
+      downloading.value = false
+      return
+    }
+    const url = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
     link.setAttribute('download', `ticket-${props.ticket.id}.pdf`)
     document.body.appendChild(link)
     link.click()
-    link.remove()
+    document.body.removeChild(link)
     window.URL.revokeObjectURL(url)
   } catch (error) {
     console.error('Failed to download PDF:', error)
@@ -173,4 +151,49 @@ async function downloadPDF() {
     downloading.value = false
   }
 }
+
+function printTicket() {
+  printMode.value = true
+  setTimeout(() => {
+    window.print()
+    printMode.value = false
+  }, 100)
+}
 </script>
+
+<style scoped>
+.print-card {
+  background: #fff;
+  box-shadow: 0 0 0 1px #e5e7eb;
+  padding: 2rem;
+  margin: 2rem auto;
+  max-width: 600px;
+}
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+  .print-card, .print-card * {
+    visibility: visible !important;
+  }
+  .print-card {
+    position: absolute !important;
+    left: 0;
+    top: 0;
+    width: 100vw;
+    box-shadow: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    z-index: 9999 !important;
+  }
+  .btn {
+    display: none !important;
+  }
+  nav, .navbar, .bg-white.shadow-lg.sticky.top-0.z-50 {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    position: static !important;
+  }
+}
+</style>
