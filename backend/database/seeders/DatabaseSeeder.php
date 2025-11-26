@@ -294,14 +294,8 @@ class DatabaseSeeder extends Seeder
             for ($i = 0; $i < $numOrders; $i++) {
                 $buyer = $allBuyers->random();
 
-                // Create payment first
-                $payment = Payment::create([
-                    'provider' => ['stripe', 'paypal'][rand(0, 1)],
-                    'status' => 'completed',
-                ]);
-
-                // Create order
-                $numTicketTypes = min(rand(1, 3), $eventTickets->count()); // Don't try to get more than available
+                // Calculate total amount and prepare items
+                $numTicketTypes = min(rand(1, 3), $eventTickets->count());
                 $orderTickets = $eventTickets->random($numTicketTypes);
 
                 $totalAmount = 0;
@@ -316,12 +310,25 @@ class DatabaseSeeder extends Seeder
                     ];
                 }
 
+                // Create order first (without payment_id initially)
                 $order = Order::create([
                     'buyer_id' => $buyer->id,
-                    'payment_id' => $payment->id,
                     'status' => 'completed',
                     'amount' => $totalAmount,
                 ]);
+
+                // Create payment
+                $payment = Payment::create([
+                    'order_id' => $order->id,
+                    'buyer_id' => $buyer->id,
+                    'provider' => ['stripe', 'paypal'][rand(0, 1)],
+                    'status' => 'completed',
+                    'transaction_id' => Str::random(32),
+                ]);
+
+                // Update order with payment_id
+                $order->payment_id = $payment->id;
+                $order->save();
 
                 $orderCount++;
 
