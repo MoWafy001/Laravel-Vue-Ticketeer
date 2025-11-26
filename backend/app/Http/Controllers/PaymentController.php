@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Http\Responses\JsonResponse; // Added this line
+use Stripe\Stripe;
+use Stripe\Checkout\Session;
 
 use App\Models\Order;
 use App\Models\Payment;
@@ -36,8 +38,31 @@ class PaymentController extends Controller
         ]);
 
         // Integrate with Stripe here
-        // $stripe = new \Stripe\StripeClient(config('services.stripe.secret'));
-        // $session = $stripe->checkout->sessions->create([...]);
+        Stripe::setApiKey(config('services.stripe.secret'));
+        $session = Session::create([
+            'payment_method_types' => ['card'],
+            'line_items' => [
+                [
+                    'price_data' => [
+                        'currency' => 'usd',
+                        'product_data' => [
+                            'name' => 'Order #' . $order->id,
+                        ],
+                        'unit_amount' => intval($order->amount * 100),
+                    ],
+                    'quantity' => 1,
+                ],
+            ],
+            'mode' => 'payment',
+            'success_url' => $request->return_url ?? config('app.url') . '/my-tickets?success=true',
+            'cancel_url' => $request->return_url ?? config('app.url') . '/my-tickets?cancel=true',
+            'metadata' => [
+                'order_id' => $order->id,
+                'payment_id' => $payment->id,
+            ],
+        ]);
+        $payment->transaction_id = $session->id;
+        $payment->save();
 
         return JsonResponse::created('Payment session created', [
             'payment_id' => $payment->id,
@@ -45,31 +70,33 @@ class PaymentController extends Controller
             'provider' => 'stripe',
             'status' => 'pending',
             'amount' => $order->amount,
-            'checkout_url' => 'https://checkout.stripe.com/test/' . $payment->transaction_id, // Placeholder
-            'session_id' => $payment->transaction_id,
+            'checkout_url' => $session->url,
+            'session_id' => $session->id,
             'expires_at' => now()->addHour(),
         ]);
     }
 
     public function webhook(Request $request)
     {
-        // Verify Stripe signature
-        // Handle events like checkout.session.completed
-
-        // For now, simulate success
+        // Verify Stripe signature (optional: add security)
         $payload = $request->all();
-
-        // Logic to find payment and update status
-        // $payment = Payment::where('transaction_id', $payload['data']['object']['id'])->first();
-        // if ($payment) {
-        //     $payment->status = 'completed';
-        //     $payment->save();
-        //     $payment->order->status = 'completed';
-        //     $payment->order->save();
-        //     // Update tickets to valid
-        //     $payment->order->tickets()->update(['status' => 'valid']);
-        // }
-
+        $eventType = $payload['type'] ?? null;
+        if ($eventType === 'checkout.session.completed') {
+            $session = $payload['data']['object'] ?? [];
+            $transactionId = $session['id'] ?? null;
+            $payment = Payment::where('transaction_id', $transactionId)->first();
+            if ($payment) {
+                $payment->status = 'completed';
+                $payment->save();
+                $order = $payment->order;
+                if ($order) {
+                    $order->status = 'completed';
+                    $order->save();
+                    // Update tickets to valid
+                    $order->tickets()->update(['status' => 'valid']);
+                }
+            }
+        }
         return JsonResponse::success('Webhook processed');
     }
 

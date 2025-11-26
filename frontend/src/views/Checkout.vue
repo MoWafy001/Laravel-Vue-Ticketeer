@@ -92,14 +92,16 @@ async function handleCheckout() {
     const orderResponse = await api.post('/orders', orderData)
     const orderId = orderResponse.data.data.id
 
-    // For now, skip Stripe and just mark as success
-    // In production, you would integrate Stripe here
-    success.value = true
-    cartStore.clearCart()
+    // Stripe integration
+    const paymentResponse = await api.post('/payments/checkout', {
+      order_id: orderId,
+      payment_method: 'stripe',
+      return_url: window.location.origin + '/my-tickets',
+    })
+    const checkoutUrl = paymentResponse.data.data.checkout_url
+    window.location.href = checkoutUrl
 
-    setTimeout(() => {
-      router.push('/my-tickets')
-    }, 2000)
+    // Remove success.value = true and cartStore.clearCart here, as Stripe will redirect after payment
   } catch (err) {
     error.value = err.response?.data?.message || 'Checkout failed. Please try again.'
   } finally {

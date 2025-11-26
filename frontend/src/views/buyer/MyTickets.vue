@@ -2,7 +2,7 @@
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
     <div class="flex justify-between items-center mb-8">
       <h1 class="text-4xl font-bold text-gray-900">My Tickets</h1>
-      
+
       <!-- Filters -->
       <div class="flex items-center space-x-4">
         <select v-model="filters.status" @change="loadTickets" class="input">
@@ -63,6 +63,8 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
+import { useCartStore } from '@/stores/cart'
 import { ticketsApi } from '@/api'
 import TicketCard from '@/components/TicketCard.vue'
 import LoadingSpinner from '@/components/LoadingSpinner.vue'
@@ -92,7 +94,7 @@ async function loadTickets() {
   try {
     const params = {}
     if (filters.status) params.status = filters.status
-    
+
     const response = await ticketsApi.getMyTickets(params)
     tickets.value = response.data.data || []
   } catch (error) {
@@ -128,7 +130,14 @@ function showAlert(type, message) {
   alert.show = true
 }
 
+const route = useRoute()
+const cartStore = useCartStore()
+
 onMounted(() => {
+  // Clear cart if redirected from Stripe success
+  if (route.query.success === 'true') {
+    cartStore.clearCart()
+  }
   loadTickets()
 })
 </script>
