@@ -14,8 +14,16 @@ class EventMemberController extends Controller
     public function index(Request $request, string $event_id)
     {
         $event = Event::findOrFail($event_id);
+        $organizer = auth('organizer')->user();
 
         // Authorization check
+        $isOwner = $organizer->companies()->where('id', $event->company_id)->exists();
+        if (!$isOwner) {
+            $membership = $organizer->companyMemberships()->where('company_id', $event->company_id)->first();
+            if (!$membership || !$membership->can_manage_all_events) {
+                return JsonResponse::error('Unauthorized', null, 403);
+            }
+        }
 
         $members = $event->members()->with('member.organizer')->get();
 
@@ -25,8 +33,16 @@ class EventMemberController extends Controller
     public function store(Request $request, string $event_id)
     {
         $event = Event::findOrFail($event_id);
+        $organizer = auth('organizer')->user();
 
         // Authorization check
+        $isOwner = $organizer->companies()->where('id', $event->company_id)->exists();
+        if (!$isOwner) {
+            $membership = $organizer->companyMemberships()->where('company_id', $event->company_id)->first();
+            if (!$membership || !$membership->can_manage_all_events) {
+                return JsonResponse::error('Unauthorized', null, 403);
+            }
+        }
 
         $request->validate([
             'member_id' => [
@@ -57,8 +73,16 @@ class EventMemberController extends Controller
     {
         $event = Event::findOrFail($event_id);
         $eventMember = $event->members()->findOrFail($member_id);
+        $organizer = auth('organizer')->user();
 
         // Authorization check
+        $isOwner = $organizer->companies()->where('id', $event->company_id)->exists();
+        if (!$isOwner) {
+            $membership = $organizer->companyMemberships()->where('company_id', $event->company_id)->first();
+            if (!$membership || !$membership->can_manage_all_events) {
+                return JsonResponse::error('Unauthorized', null, 403);
+            }
+        }
 
         $request->validate([
             'can_edit_details' => 'boolean',
@@ -85,8 +109,16 @@ class EventMemberController extends Controller
     {
         $event = Event::findOrFail($event_id);
         $eventMember = $event->members()->findOrFail($member_id);
+        $organizer = auth('organizer')->user();
 
         // Authorization check
+        $isOwner = $organizer->companies()->where('id', $event->company_id)->exists();
+        if (!$isOwner) {
+            $membership = $organizer->companyMemberships()->where('company_id', $event->company_id)->first();
+            if (!$membership || !$membership->can_manage_all_events) {
+                return JsonResponse::error('Unauthorized', null, 403);
+            }
+        }
 
         $eventMember->delete();
 

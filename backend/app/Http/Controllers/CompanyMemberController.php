@@ -14,7 +14,7 @@ class CompanyMemberController extends Controller
 {
     public function index(Request $request, string $company_id)
     {
-        $company = $request->user()->companies()->findOrFail($company_id);
+        $company = auth('organizer')->user()->companies()->findOrFail($company_id);
 
         $members = $company->members()->with('organizer')->paginate($request->query('per_page', 20));
 
@@ -31,7 +31,7 @@ class CompanyMemberController extends Controller
 
     public function store(Request $request, string $company_id)
     {
-        $company = $request->user()->companies()->findOrFail($company_id);
+        $company = auth('organizer')->user()->companies()->findOrFail($company_id);
 
         $request->validate([
             'organizer_id' => [
@@ -56,7 +56,7 @@ class CompanyMemberController extends Controller
 
     public function show(Request $request, string $company_id, string $member_id)
     {
-        $company = $request->user()->companies()->findOrFail($company_id);
+        $company = auth('organizer')->user()->companies()->findOrFail($company_id);
         $member = $company->members()->with('organizer')->findOrFail($member_id);
 
         return JsonResponse::success('Member retrieved successfully', $member);
@@ -64,7 +64,7 @@ class CompanyMemberController extends Controller
 
     public function update(Request $request, string $company_id, string $member_id)
     {
-        $company = $request->user()->companies()->findOrFail($company_id);
+        $company = auth('organizer')->user()->companies()->findOrFail($company_id);
         $member = $company->members()->findOrFail($member_id);
 
         $request->validate([
@@ -90,7 +90,7 @@ class CompanyMemberController extends Controller
 
     public function destroy(Request $request, string $company_id, string $member_id)
     {
-        $company = $request->user()->companies()->findOrFail($company_id);
+        $company = auth('organizer')->user()->companies()->findOrFail($company_id);
         $member = $company->members()->findOrFail($member_id);
 
         $member->delete();

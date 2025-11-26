@@ -79,17 +79,20 @@ class EventController extends Controller
             'sale_end_time' => 'required|date|after:sale_start_time',
         ]);
 
-        // Check if user is owner or member with permission
-        $company = $request->user()->companies()->find($request->company_id);
+        $organizer = auth('organizer')->user();
+        $company = $organizer->companies()->find($request->company_id);
+
         if (!$company) {
-            // Check membership
-            $membership = $request->user()->companyMemberships()->where('company_id', $request->company_id)->first();
+            // Check membership if not owner
+            $membership = $organizer->companyMemberships()->where('company_id', $request->company_id)->first();
             if (!$membership || (!$membership->can_create_events && !$membership->can_manage_all_events)) {
                 return JsonResponse::error('Unauthorized', null, 403);
             }
+            // If member, ensure we use the company instance
+            $company = \App\Models\Company::find($request->company_id);
         }
 
-        $event = Event::create($request->all());
+        $event = $company->events()->create($request->all());
 
         return JsonResponse::created('Event created successfully', $event);
     }
@@ -104,9 +107,22 @@ class EventController extends Controller
     public function update(Request $request, string $id)
     {
         $event = Event::findOrFail($id);
+        $organizer = auth('organizer')->user();
 
-        // Authorization check (simplified for now, ideally use Policies)
-        // Check if user is owner of company or has permission
+        // Check if user is owner of company
+        $isOwner = $organizer->companies()->where('id', $event->company_id)->exists();
+
+        if (!$isOwner) {
+            // Check membership permissions
+            $membership = $organizer->companyMemberships()->where('company_id', $event->company_id)->first();
+            if (!$membership || !$membership->can_manage_all_events) {
+                // Check if they are an event member with permission
+                $eventMember = $event->members()->where('organizer_id', $organizer->id)->first();
+                if (!$eventMember || !$eventMember->can_edit_event) {
+                    return JsonResponse::error('Unauthorized', null, 403);
+                }
+            }
+        }
 
         $request->validate([
             'name' => 'nullable|string|max:255',
@@ -125,6 +141,19 @@ class EventController extends Controller
     public function destroy(Request $request, string $id)
     {
         $event = Event::findOrFail($id);
+        $organizer = auth('organizer')->user();
+
+        // Check if user is owner of company
+        $isOwner = $organizer->companies()->where('id', $event->company_id)->exists();
+
+        if (!$isOwner) {
+            // Check membership permissions (only company admins/owners usually delete events, or maybe manage_all_events)
+            $membership = $organizer->companyMemberships()->where('company_id', $event->company_id)->first();
+            if (!$membership || !$membership->can_manage_all_events) {
+                return JsonResponse::error('Unauthorized', null, 403);
+            }
+        }
+
         $event->delete();
 
         return JsonResponse::success('Event deleted successfully');
@@ -133,15 +162,30 @@ class EventController extends Controller
     public function analytics(Request $request, string $id)
     {
         $event = Event::findOrFail($id);
+        $organizer = auth('organizer')->user();
+
+        // Check authorization (owner, company admin, or event member)
+        $isOwner = $organizer->companies()->where('id', $event->company_id)->exists();
+        if (!$isOwner) {
+            $membership = $organizer->companyMemberships()->where('company_id', $event->company_id)->first();
+            $canManageAll = $membership && $membership->can_manage_all_events;
+
+            $eventMember = $event->members()->where('organizer_id', $organizer->id)->first();
+            $isEventMember = $eventMember !== null;
+
+            if (!$canManageAll && !$isEventMember) {
+                return JsonResponse::error('Unauthorized', null, 403);
+            }
+        }
 
         // Placeholder analytics
         $analytics = [
             'event_id' => $event->id,
             'event_name' => $event->name,
             'total_tickets' => $event->tickets()->sum('quantity'),
-            'tickets_sold' => 0, // Implement
-            'tickets_available' => 0, // Implement
-            'total_revenue' => 0, // Implement
+            'tickets_sold' => $event->tickets()->withCount('boughtTickets')->get()->sum('bought_tickets_count'),
+            'tickets_available' => $event->tickets()->sum('quantity') - $event->tickets()->withCount('boughtTickets')->get()->sum('bought_tickets_count'),
+            'total_revenue' => 0, // Implement revenue calc
         ];
 
         return JsonResponse::success('Event analytics retrieved successfully', $analytics);
@@ -150,6 +194,21 @@ class EventController extends Controller
     public function attendees(Request $request, string $id)
     {
         $event = Event::findOrFail($id);
+        $organizer = auth('organizer')->user();
+
+        // Check authorization
+        $isOwner = $organizer->companies()->where('id', $event->company_id)->exists();
+        if (!$isOwner) {
+            $membership = $organizer->companyMemberships()->where('company_id', $event->company_id)->first();
+            $canManageAll = $membership && $membership->can_manage_all_events;
+
+            $eventMember = $event->members()->where('organizer_id', $organizer->id)->first();
+            $canScan = $eventMember && $eventMember->can_scan_tickets; // Assuming scanning implies viewing attendees? Or maybe separate permission.
+
+            if (!$canManageAll && !$eventMember) {
+                return JsonResponse::error('Unauthorized', null, 403);
+            }
+        }
 
         $attendees = $event->boughtTickets()->with('buyer')->paginate($request->query('per_page', 20));
 

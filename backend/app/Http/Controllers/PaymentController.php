@@ -19,7 +19,8 @@ class PaymentController extends Controller
             'return_url' => 'nullable|url',
         ]);
 
-        $order = $request->user()->orders()->findOrFail($request->order_id);
+        $buyer = auth('buyer')->user();
+        $order = $buyer->orders()->findOrFail($request->order_id);
 
         if ($order->status !== 'pending') {
             return JsonResponse::error('Order is not pending payment', null, 400);
@@ -28,7 +29,7 @@ class PaymentController extends Controller
         // Create Payment record
         $payment = Payment::create([
             'order_id' => $order->id,
-            'buyer_id' => $request->user()->id,
+            'buyer_id' => $buyer->id,
             'provider' => 'stripe',
             'status' => 'pending',
             'transaction_id' => Str::random(32), // Placeholder for Stripe Session ID
@@ -74,7 +75,7 @@ class PaymentController extends Controller
 
     public function show(Request $request, string $id)
     {
-        $payment = Payment::with('order')->where('buyer_id', $request->user()->id)->findOrFail($id);
+        $payment = Payment::with('order')->where('buyer_id', auth('buyer')->user()->id)->findOrFail($id);
 
         return JsonResponse::success('Payment retrieved successfully', $payment);
     }

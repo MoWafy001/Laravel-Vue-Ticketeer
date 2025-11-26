@@ -10,7 +10,7 @@ class CompanyController extends Controller
 {
     public function index(Request $request)
     {
-        $companies = $request->user()->companies()->paginate($request->query('per_page', 20));
+        $companies = auth('organizer')->user()->companies()->paginate($request->query('per_page', 20));
 
         return JsonResponse::success('Companies retrieved successfully', $companies->items(), 200, [
             'pagination' => [
@@ -29,7 +29,7 @@ class CompanyController extends Controller
             'name' => 'required|string|max:255',
         ]);
 
-        $company = $request->user()->companies()->create([
+        $company = auth('organizer')->user()->companies()->create([
             'name' => $request->name,
         ]);
 
@@ -38,14 +38,14 @@ class CompanyController extends Controller
 
     public function show(Request $request, string $id)
     {
-        $company = $request->user()->companies()->withCount(['members', 'events'])->findOrFail($id);
+        $company = auth('organizer')->user()->companies()->withCount(['members', 'events'])->findOrFail($id);
 
         return JsonResponse::success('Company retrieved successfully', $company);
     }
 
     public function update(Request $request, string $id)
     {
-        $company = $request->user()->companies()->findOrFail($id);
+        $company = auth('organizer')->user()->companies()->findOrFail($id);
 
         $request->validate([
             'name' => 'required|string|max:255',
@@ -60,7 +60,7 @@ class CompanyController extends Controller
 
     public function destroy(Request $request, string $id)
     {
-        $company = $request->user()->companies()->findOrFail($id);
+        $company = auth('organizer')->user()->companies()->findOrFail($id);
 
         $company->delete();
 
@@ -69,7 +69,7 @@ class CompanyController extends Controller
 
     public function analytics(Request $request, string $id)
     {
-        $company = $request->user()->companies()->findOrFail($id);
+        $company = auth('organizer')->user()->companies()->findOrFail($id);
 
         // Placeholder for analytics logic
         // In a real app, this would aggregate data from events, tickets, etc.

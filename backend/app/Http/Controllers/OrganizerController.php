@@ -12,12 +12,12 @@ class OrganizerController extends Controller
 {
     public function profile(Request $request)
     {
-        return JsonResponse::success('Profile retrieved successfully', $request->user());
+        return JsonResponse::success('Profile retrieved successfully', auth('organizer')->user());
     }
 
     public function updateProfile(Request $request)
     {
-        $organizer = $request->user();
+        $organizer = auth('organizer')->user();
 
         $request->validate([
             'name' => 'nullable|string|max:255',

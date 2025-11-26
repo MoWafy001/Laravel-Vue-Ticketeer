@@ -25,6 +25,7 @@ class OrderController extends Controller
             return DB::transaction(function () use ($request) {
                 $totalAmount = 0;
                 $orderItems = [];
+                $buyer = auth('buyer')->user();
 
                 foreach ($request->items as $item) {
                     $ticket = Ticket::lockForUpdate()->find($item['ticket_id']);
@@ -49,7 +50,7 @@ class OrderController extends Controller
                     }
                 }
 
-                $order = $request->user()->orders()->create([
+                $order = $buyer->orders()->create([
                     'status' => 'pending',
                     'amount' => $totalAmount,
                 ]);
@@ -57,7 +58,7 @@ class OrderController extends Controller
                 foreach ($orderItems as $item) {
                     $order->tickets()->create([
                         'ticket_id' => $item['ticket_id'],
-                        'buyer_id' => $request->user()->id,
+                        'buyer_id' => $buyer->id,
                         'status' => 'pending', // Waiting for payment
                         'qr_code' => Str::random(64), // Generate later?
                         'valid_until' => now()->addDays(30), // Placeholder
@@ -73,7 +74,7 @@ class OrderController extends Controller
 
     public function index(Request $request)
     {
-        $orders = $request->user()->orders()->withCount('tickets')->paginate($request->query('per_page', 20));
+        $orders = auth('buyer')->user()->orders()->withCount('tickets')->paginate($request->query('per_page', 20));
 
         return JsonResponse::success('Orders retrieved successfully', $orders->items(), 200, [
             'pagination' => [
@@ -88,7 +89,7 @@ class OrderController extends Controller
 
     public function show(Request $request, string $id)
     {
-        $order = $request->user()->orders()->with(['tickets.ticket.event', 'payment'])->findOrFail($id);
+        $order = auth('buyer')->user()->orders()->with(['tickets.ticket.event', 'payment'])->findOrFail($id);
 
         return JsonResponse::success('Order retrieved successfully', $order);
     }

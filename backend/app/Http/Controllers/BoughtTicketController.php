@@ -10,10 +10,24 @@ class BoughtTicketController extends Controller
 {
     public function cancelByOrganizer(Request $request, string $bought_ticket_id)
     {
-        $ticket = BoughtTicket::findOrFail($bought_ticket_id);
+        $ticket = BoughtTicket::with('ticket.event.company')->findOrFail($bought_ticket_id);
+        $organizer = auth('organizer')->user();
 
-        // Authorization check: ensure organizer owns the event/company
-        // $ticket->ticket->event->company->owner_id === $request->user()->id
+        // Authorization check: ensure organizer owns the event/company or has permission
+        $event = $ticket->ticket->event;
+        $isOwner = $organizer->companies()->where('id', $event->company_id)->exists();
+
+        if (!$isOwner) {
+            $membership = $organizer->companyMemberships()->where('company_id', $event->company_id)->first();
+            $canManageAll = $membership && $membership->can_manage_all_events;
+
+            $eventMember = $event->members()->where('organizer_id', $organizer->id)->first();
+            $canManageTickets = $eventMember && $eventMember->can_manage_tickets;
+
+            if (!$canManageAll && !$canManageTickets) {
+                return JsonResponse::error('Unauthorized', null, 403);
+            }
+        }
 
         $request->validate([
             'reason' => 'nullable|string|max:500',
@@ -43,6 +57,24 @@ class BoughtTicketController extends Controller
 
         if (!$ticket) {
             return JsonResponse::error('Invalid ticket', null, 404);
+        }
+
+        $organizer = auth('organizer')->user();
+        $event = $ticket->ticket->event;
+
+        // Authorization check: ensure organizer can scan tickets for this event
+        $isOwner = $organizer->companies()->where('id', $event->company_id)->exists();
+
+        if (!$isOwner) {
+            $membership = $organizer->companyMemberships()->where('company_id', $event->company_id)->first();
+            $canManageAll = $membership && $membership->can_manage_all_events;
+
+            $eventMember = $event->members()->where('organizer_id', $organizer->id)->first();
+            $canScan = $eventMember && $eventMember->can_scan_tickets;
+
+            if (!$canManageAll && !$canScan) {
+                return JsonResponse::error('Unauthorized', null, 403);
+            }
         }
 
         // Check if event is today, etc.

@@ -15,12 +15,12 @@ class BuyerController extends Controller
 {
     public function profile(Request $request)
     {
-        return JsonResponse::success('Profile retrieved successfully', $request->user());
+        return JsonResponse::success('Profile retrieved successfully', auth('buyer')->user());
     }
 
     public function updateProfile(Request $request)
     {
-        $buyer = $request->user();
+        $buyer = auth('buyer')->user();
 
         $request->validate([
             'name' => 'nullable|string|max:255',
@@ -60,7 +60,7 @@ class BuyerController extends Controller
 
     public function index(Request $request)
     {
-        $query = $request->user()->tickets()->with(['ticket.event.company']);
+        $query = auth('buyer')->user()->tickets()->with(['ticket.event.company']);
 
         if ($request->has('status')) {
             $query->where('status', $request->status);
@@ -83,14 +83,14 @@ class BuyerController extends Controller
 
     public function show(Request $request, string $id)
     {
-        $ticket = $request->user()->tickets()->with(['ticket.event.company'])->findOrFail($id);
+        $ticket = auth('buyer')->user()->tickets()->with(['ticket.event.company'])->findOrFail($id);
 
         return JsonResponse::success('Ticket retrieved successfully', $ticket);
     }
 
     public function downloadPdf(Request $request, string $id)
     {
-        $ticket = $request->user()->tickets()->with(['ticket.event.company', 'buyer'])->findOrFail($id);
+        $ticket = auth('buyer')->user()->tickets()->with(['ticket.event.company', 'buyer'])->findOrFail($id);
 
         // In a real app, generate PDF using a library like dompdf
         // For now, return a dummy response or text
@@ -106,7 +106,7 @@ class BuyerController extends Controller
 
     public function cancelByBuyer(Request $request, string $id)
     {
-        $ticket = $request->user()->tickets()->findOrFail($id);
+        $ticket = auth('buyer')->user()->tickets()->findOrFail($id);
 
         if ($ticket->status !== 'valid') {
             return JsonResponse::error('Ticket cannot be cancelled', null, 400);
