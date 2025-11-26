@@ -34,13 +34,54 @@
             <RouterLink v-if="authStore.isBuyer" to="/my-tickets" class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
               My Tickets
             </RouterLink>
-            <div class="flex items-center space-x-2">
-              <div class="h-8 w-8 rounded-full bg-gradient-to-r from-primary-500 to-secondary-500 flex items-center justify-center text-white font-medium">
-                {{ authStore.user?.name?.charAt(0).toUpperCase() }}
-              </div>
-              <button @click="handleLogout" class="text-gray-700 hover:text-red-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
-                Logout
+            
+            <!-- Profile Dropdown -->
+            <div class="relative">
+              <button
+                @click="showProfileMenu = !showProfileMenu"
+                class="flex items-center space-x-2 text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+              >
+                <div class="h-8 w-8 rounded-full bg-gradient-to-r from-primary-500 to-secondary-500 flex items-center justify-center text-white font-medium">
+                  {{ authStore.user?.name?.charAt(0).toUpperCase() }}
+                </div>
+                <span class="hidden md:inline">{{ authStore.user?.name }}</span>
+                <ChevronDownIcon class="h-4 w-4" />
               </button>
+
+              <!-- Dropdown Menu -->
+              <div
+                v-if="showProfileMenu"
+                @click="showProfileMenu = false"
+                class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200 animate-slide-down"
+              >
+                <div class="px-4 py-2 border-b border-gray-200">
+                  <p class="text-sm font-semibold text-gray-900">{{ authStore.user?.name }}</p>
+                  <p class="text-xs text-gray-500">{{ authStore.user?.email }}</p>
+                </div>
+                
+                <RouterLink
+                  v-if="authStore.isOrganizer"
+                  to="/organizer/dashboard"
+                  class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                >
+                  Dashboard
+                </RouterLink>
+                
+                <RouterLink
+                  v-if="authStore.isBuyer"
+                  to="/my-tickets"
+                  class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                >
+                  My Tickets
+                </RouterLink>
+                
+                <button
+                  @click="handleLogout"
+                  class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                >
+                  Logout
+                </button>
+              </div>
             </div>
           </div>
 
@@ -59,16 +100,19 @@
 </template>
 
 <script setup>
+import { ref } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useCartStore } from '@/stores/cart'
 import { useRouter } from 'vue-router'
-import { ShoppingCartIcon } from '@heroicons/vue/24/outline'
+import { ShoppingCartIcon, ChevronDownIcon } from '@heroicons/vue/24/outline'
 
 const authStore = useAuthStore()
 const cartStore = useCartStore()
 const router = useRouter()
+const showProfileMenu = ref(false)
 
 async function handleLogout() {
+  showProfileMenu.value = false
   await authStore.logout()
   router.push('/')
 }

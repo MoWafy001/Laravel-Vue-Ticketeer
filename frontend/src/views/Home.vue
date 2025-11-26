@@ -10,12 +10,12 @@
           <p class="text-xl md:text-2xl mb-8 text-purple-100">
             Book tickets for concerts, conferences, and more
           </p>
-          <RouterLink to="/events" class="btn btn-accent text-lg px-8 py-3 inline-block">
+          <RouterLink to="/events" class="btn bg-white text-primary-600 hover:bg-gray-100 text-lg px-8 py-3 inline-block font-semibold shadow-lg">
             Browse Events
           </RouterLink>
         </div>
       </div>
-      <div class="absolute inset-0 bg-black opacity-10"></div>
+      <div class="absolute inset-0 bg-black opacity-10 pointer-events-none"></div>
     </section>
 
     <!-- Featured Events -->

@@ -78,6 +78,11 @@ const router = createRouter({
                     name: 'organizer-event-details',
                     component: () => import('@/views/organizer/EventDetails.vue'),
                 },
+                {
+                    path: 'scanner',
+                    name: 'organizer-scanner',
+                    component: () => import('@/views/organizer/TicketScanner.vue'),
+                },
             ],
         },
     ],

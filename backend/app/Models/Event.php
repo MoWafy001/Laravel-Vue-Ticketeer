@@ -13,6 +13,7 @@ class Event extends Model
 
     protected $fillable = [
         'company_id',
+        'created_by',
         'name',
         'description',
         'start_time',
@@ -31,6 +32,11 @@ class Event extends Model
     public function company()
     {
         return $this->belongsTo(Company::class);
+    }
+
+    public function creator()
+    {
+        return $this->belongsTo(Organizer::class, 'created_by');
     }
 
     public function members()

@@ -10,7 +10,7 @@ class EventController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Event::query()->with('company');
+        $query = Event::query()->with(['company', 'creator']);
 
         if ($request->has('search')) {
             $search = $request->search;
@@ -92,14 +92,17 @@ class EventController extends Controller
             $company = \App\Models\Company::find($request->company_id);
         }
 
-        $event = $company->events()->create($request->all());
+        $eventData = $request->all();
+        $eventData['created_by'] = $organizer->id;
 
-        return JsonResponse::created('Event created successfully', $event);
+        $event = $company->events()->create($eventData);
+
+        return JsonResponse::created('Event created successfully', $event->load('creator', 'company'));
     }
 
     public function show(string $id)
     {
-        $event = Event::with(['company', 'tickets'])->findOrFail($id);
+        $event = Event::with(['company', 'creator', 'tickets'])->findOrFail($id);
 
         return JsonResponse::success('Event retrieved successfully', $event);
     }
@@ -135,7 +138,7 @@ class EventController extends Controller
 
         $event->update($request->all());
 
-        return JsonResponse::success('Event updated successfully', $event);
+        return JsonResponse::success('Event updated successfully', $event->load('creator', 'company'));
     }
 
     public function destroy(Request $request, string $id)

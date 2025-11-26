@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('status');
             $table->decimal('amount');
             $table->uuid('buyer_id');
-            $table->uuid('payment_id');
+            $table->uuid('payment_id')->nullable();
             $table->timestamps();
 
             $table->foreign('buyer_id')->references('id')->on('buyers');

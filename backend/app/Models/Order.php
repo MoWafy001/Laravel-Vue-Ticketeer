@@ -13,6 +13,7 @@ class Order extends Model
 
     protected $fillable = [
         'buyer_id',
+        'payment_id',
         'status',
         'amount',
     ];
@@ -28,7 +29,7 @@ class Order extends Model
 
     public function payment()
     {
-        return $this->hasOne(Payment::class);
+        return $this->belongsTo(Payment::class);
     }
 
     public function tickets()

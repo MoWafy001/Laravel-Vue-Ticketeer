@@ -98,6 +98,10 @@ async function loadEvent() {
     const response = await api.get(`/events/${route.params.id}`)
     event.value = response.data.data
     
+    // Load tickets separately
+    const ticketsResponse = await api.get(`/events/${route.params.id}/tickets`)
+    event.value.tickets = ticketsResponse.data.data || event.value.ticket_types || []
+    
     // Initialize quantities
     event.value.tickets?.forEach(ticket => {
       ticketQuantities[ticket.id] = 1
