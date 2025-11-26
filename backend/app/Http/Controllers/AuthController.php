@@ -26,12 +26,13 @@ class AuthController extends Controller
             'password' => Hash::make($request->password),
         ]);
 
-        $token = $organizer->createToken('auth_token', ['organizer'])->plainTextToken;
+        $token = auth('organizer')->login($organizer);
 
         return JsonResponse::created('Organizer registered successfully', [
             'organizer' => $organizer,
             'token' => $token,
             'token_type' => 'Bearer',
+            'expires_in' => auth('organizer')->factory()->getTTL() * 60,
         ]);
     }
 
@@ -42,20 +43,19 @@ class AuthController extends Controller
             'password' => 'required|string',
         ]);
 
-        $organizer = Organizer::where('email', $request->email)->first();
+        $credentials = $request->only('email', 'password');
 
-        if (!$organizer || !Hash::check($request->password, $organizer->password)) {
+        if (!$token = auth('organizer')->attempt($credentials)) {
             throw ValidationException::withMessages([
                 'email' => ['Invalid credentials'],
             ]);
         }
 
-        $token = $organizer->createToken('auth_token', ['organizer'])->plainTextToken;
-
         return JsonResponse::success('Login successful', [
-            'user' => $organizer,
+            'user' => auth('organizer')->user(),
             'token' => $token,
             'token_type' => 'Bearer',
+            'expires_in' => auth('organizer')->factory()->getTTL() * 60,
         ]);
     }
 
@@ -73,12 +73,13 @@ class AuthController extends Controller
             'password' => Hash::make($request->password),
         ]);
 
-        $token = $buyer->createToken('auth_token', ['buyer'])->plainTextToken;
+        $token = auth('buyer')->login($buyer);
 
         return JsonResponse::created('Buyer registered successfully', [
             'buyer' => $buyer,
             'token' => $token,
             'token_type' => 'Bearer',
+            'expires_in' => auth('buyer')->factory()->getTTL() * 60,
         ]);
     }
 
@@ -89,26 +90,37 @@ class AuthController extends Controller
             'password' => 'required|string',
         ]);
 
-        $buyer = Buyer::where('email', $request->email)->first();
+        $credentials = $request->only('email', 'password');
 
-        if (!$buyer || !Hash::check($request->password, $buyer->password)) {
+        if (!$token = auth('buyer')->attempt($credentials)) {
             throw ValidationException::withMessages([
                 'email' => ['Invalid credentials'],
             ]);
         }
 
-        $token = $buyer->createToken('auth_token', ['buyer'])->plainTextToken;
-
         return JsonResponse::success('Login successful', [
-            'buyer' => $buyer,
+            'buyer' => auth('buyer')->user(),
             'token' => $token,
             'token_type' => 'Bearer',
+            'expires_in' => auth('buyer')->factory()->getTTL() * 60,
         ]);
     }
 
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
+        // Determine guard based on token payload or try both?
+        // Ideally the middleware sets the guard.
+        // For now, we can try to logout from the current guard if known, or just invalidate token.
+
+        try {
+            if (auth('organizer')->check()) {
+                auth('organizer')->logout();
+            } elseif (auth('buyer')->check()) {
+                auth('buyer')->logout();
+            }
+        } catch (\Exception $e) {
+            // Token might be invalid already
+        }
 
         return JsonResponse::success('Logged out successfully');
     }

@@ -31,7 +31,7 @@ Route::prefix('auth')->group(function () {
     Route::post('organizer/login', [AuthController::class, 'loginOrganizer']);
     Route::post('buyer/register', [AuthController::class, 'registerBuyer']);
     Route::post('buyer/login', [AuthController::class, 'loginBuyer']);
-    Route::middleware('auth:sanctum')->post('logout', [AuthController::class, 'logout']);
+    Route::post('logout', [AuthController::class, 'logout']);
 });
 
 // Public Event Routes
@@ -39,7 +39,7 @@ Route::get('events', [EventController::class, 'index']);
 Route::get('events/{id}', [EventController::class, 'show']);
 
 // Organizer Routes
-Route::middleware(['auth:sanctum', 'ability:organizer'])->group(function () {
+Route::middleware(['auth:organizer'])->group(function () {
     // Organizer Profile
     Route::get('organizer/profile', [OrganizerController::class, 'profile']);
     Route::put('organizer/profile', [OrganizerController::class, 'updateProfile']);
@@ -76,7 +76,7 @@ Route::middleware(['auth:sanctum', 'ability:organizer'])->group(function () {
 });
 
 // Buyer Routes
-Route::middleware(['auth:sanctum', 'ability:buyer'])->group(function () {
+Route::middleware(['auth:buyer'])->group(function () {
     // Buyer Profile
     Route::get('buyer/profile', [BuyerController::class, 'profile']);
     Route::put('buyer/profile', [BuyerController::class, 'updateProfile']);
