@@ -4,7 +4,30 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+
 class Company extends Model
 {
-    //
+    use HasFactory, HasUuids;
+
+    protected $fillable = [
+        'name',
+        'owner_id',
+    ];
+
+    public function owner()
+    {
+        return $this->belongsTo(Organizer::class, 'owner_id');
+    }
+
+    public function members()
+    {
+        return $this->hasMany(CompanyMember::class);
+    }
+
+    public function events()
+    {
+        return $this->hasMany(Event::class);
+    }
 }
