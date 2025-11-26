@@ -3,14 +3,17 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex justify-between h-16">
         <div class="flex items-center">
-          <RouterLink to="/" class="flex items-center space-x-2">
+          <span
+            class="flex items-center space-x-2 cursor-pointer"
+            @click="handleAppNameClick"
+          >
             <div class="w-10 h-10 bg-gradient-to-r from-primary-600 to-secondary-600 rounded-lg flex items-center justify-center">
               <span class="text-white font-bold text-xl">T</span>
             </div>
             <span class="text-2xl font-bold bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
               Ticketeer
             </span>
-          </RouterLink>
+          </span>
           
           <div class="hidden md:ml-10 md:flex md:space-x-8">
             <RouterLink to="/events" class="text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
@@ -115,5 +118,15 @@ async function handleLogout() {
   showProfileMenu.value = false
   await authStore.logout()
   router.push('/')
+}
+
+function handleAppNameClick() {
+  if (authStore.isOrganizer) {
+    router.push('/organizer/dashboard')
+  } else if (authStore.isBuyer) {
+    router.push('/events')
+  } else {
+    router.push('/')
+  }
 }
 </script>

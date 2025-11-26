@@ -37,6 +37,7 @@ Route::prefix('auth')->group(function () {
 // Public Event Routes
 Route::get('events', [EventController::class, 'index']);
 Route::get('events/{id}', [EventController::class, 'show']);
+Route::get('events/{event_id}/tickets', [TicketController::class, 'index']); // Public ticket viewing
 
 // Organizer Routes
 Route::middleware(['auth:organizer'])->group(function () {
@@ -63,7 +64,6 @@ Route::middleware(['auth:organizer'])->group(function () {
 
     // Tickets (Organizer actions)
     Route::post('events/{event_id}/tickets', [TicketController::class, 'store']);
-    Route::get('events/{event_id}/tickets', [TicketController::class, 'index']);
     Route::get('tickets/{id}', [TicketController::class, 'show']);
     Route::put('tickets/{id}', [TicketController::class, 'update']);
     Route::delete('tickets/{id}', [TicketController::class, 'destroy']);

@@ -27,10 +27,19 @@ api.interceptors.request.use(
 api.interceptors.response.use(
     (response) => response,
     (error) => {
-        if (error.response?.status === 401) {
+        // Only auto-logout if we have a token and got 401
+        // This prevents logout on public endpoints that return 401
+        if (
+            error.response?.status === 401 &&
+            error.config?.headers?.Authorization &&
+            !error.config.url.includes('/events/') // Don't logout/redirect for public event endpoints
+        ) {
             const authStore = useAuthStore()
             authStore.logout()
-            window.location.href = '/login'
+            // Only redirect if we're not already on login page
+            if (window.location.pathname !== '/login') {
+                window.location.href = '/login'
+            }
         }
         return Promise.reject(error)
     }

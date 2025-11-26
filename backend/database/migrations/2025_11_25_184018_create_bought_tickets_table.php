@@ -19,6 +19,7 @@ return new class extends Migration
             $table->datetime('valid_until');
             $table->datetime('used_at')->nullable();
             $table->string('status');
+            $table->string('qr_code')->nullable();
             $table->timestamps();
 
             $table->foreign('ticket_id')->references('id')->on('tickets');

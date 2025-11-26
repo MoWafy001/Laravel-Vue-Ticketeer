@@ -49,7 +49,9 @@
           </div>
           <div>
             <p class="text-sm text-gray-500 mb-1">Price</p>
-            <p class="font-semibold">${{ ticket.ticket?.price?.toFixed(2) }}</p>
+            <p class="font-semibold">
+              {{ typeof ticket.ticket?.price === 'number' ? '$' + ticket.ticket.price.toFixed(2) : (typeof ticket.ticket?.price === 'string' ? '$' + Number(ticket.ticket.price).toFixed(2) : 'N/A') }}
+            </p>
           </div>
           <div>
             <p class="text-sm text-gray-500 mb-1">Event Date</p>

@@ -66,6 +66,9 @@
               <div v-if="!authStore.isBuyer" class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
                 <p class="text-yellow-800">Please <RouterLink to="/login" class="font-semibold underline">login as a buyer</RouterLink> to purchase tickets</p>
               </div>
+              <div v-if="purchaseError" class="bg-red-50 border border-red-200 rounded-lg p-4 text-center mt-4">
+                <p class="text-red-800">{{ purchaseError }}</p>
+              </div>
             </div>
           </div>
         </div>
@@ -74,6 +77,10 @@
 
     <div v-else class="text-center py-12">
       <p class="text-gray-500 text-lg">Event not found</p>
+      <div v-if="errorMsg" class="bg-red-50 border border-red-200 rounded-lg p-4 text-center mt-4">
+        <p class="text-red-800">{{ errorMsg }}</p>
+        <button class="btn btn-primary mt-2" @click="loadEvent">Retry</button>
+      </div>
     </div>
   </div>
 </template>
@@ -91,9 +98,13 @@ const cartStore = useCartStore()
 
 const event = ref(null)
 const loading = ref(true)
+const errorMsg = ref('')
+const purchaseError = ref('')
 const ticketQuantities = reactive({})
 
 async function loadEvent() {
+  loading.value = true
+  errorMsg.value = ''
   try {
     const response = await api.get(`/events/${route.params.id}`)
     event.value = response.data.data
@@ -107,16 +118,23 @@ async function loadEvent() {
       ticketQuantities[ticket.id] = 1
     })
   } catch (error) {
+    event.value = null
+    errorMsg.value = 'Failed to load event. Please try again.'
     console.error('Failed to load event:', error)
   } finally {
     loading.value = false
   }
 }
 
-function addToCart(ticket) {
+async function addToCart(ticket) {
+  purchaseError.value = ''
   const quantity = ticketQuantities[ticket.id] || 1
-  cartStore.addItem(ticket, quantity)
-  alert(`Added ${quantity} ticket(s) to cart!`)
+  try {
+    cartStore.addItem(ticket, quantity)
+    purchaseError.value = `Added ${quantity} ticket(s) to cart!`
+  } catch (error) {
+    purchaseError.value = error?.response?.data?.message || 'Failed to add to cart.'
+  }
 }
 
 function formatDateTime(dateString) {

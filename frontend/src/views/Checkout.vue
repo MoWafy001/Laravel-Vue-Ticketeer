@@ -65,6 +65,21 @@ async function handleCheckout() {
   loading.value = true
   error.value = ''
 
+  // Validation: check cart items
+  if (!cartStore.items.length) {
+    error.value = 'Your cart is empty.'
+    loading.value = false
+    return
+  }
+  for (const item of cartStore.items) {
+    // Use item.ticket_id for backend compatibility
+    if (!item.ticket_id || !item.quantity || item.quantity < 1) {
+      error.value = 'Invalid ticket or quantity in cart.'
+      loading.value = false
+      return
+    }
+  }
+
   try {
     // Create order
     const orderData = {

@@ -14,33 +14,44 @@ class TicketController extends Controller
     {
         $event = Event::findOrFail($event_id);
 
-        // Publicly accessible? Or only for organizers?
-        // The route is under organizer middleware, so we assume organizer context.
-        // But maybe buyers also need to see tickets?
-        // For now, let's assume this is the organizer's view of tickets.
-        // If buyers need it, we'll have a public route.
-
+        // Check if authenticated as organizer
         $organizer = auth('organizer')->user();
 
-        // Auth check
-        $isOwner = $organizer->companies()->where('id', $event->company_id)->exists();
-        if (!$isOwner) {
-            $membership = $organizer->companyMemberships()->where('company_id', $event->company_id)->first();
-            $canManageAll = $membership && $membership->can_manage_all_events;
-            $eventMember = $event->members()->where('organizer_id', $organizer->id)->first();
+        if ($organizer) {
+            // Organizer - do auth check
+            $isOwner = $organizer->companies()->where('id', $event->company_id)->exists();
+            if (!$isOwner) {
+                $membership = $organizer->companyMemberships()->where('company_id', $event->company_id)->first();
+                $canManageAll = $membership && $membership->can_manage_all_events;
+                $eventMember = $event->members()->where('member_id', function($query) use ($organizer, $event) {
+                    $query->select('id')->from('company_members')
+                        ->where('organizer_id', $organizer->id)
+                        ->where('company_id', $event->company_id);
+                })->first();
 
-            if (!$canManageAll && !$eventMember) {
-                return JsonResponse::error('Unauthorized', null, 403);
+                if (!$canManageAll && !$eventMember) {
+                    return JsonResponse::error('Unauthorized', null, 403);
+                }
             }
-        }
 
-        $tickets = $event->tickets()
-            ->withCount(['boughtTickets as sold'])
-            ->get()
-            ->map(function ($ticket) {
-                $ticket->available = $ticket->quantity - $ticket->sold;
-                return $ticket;
-            });
+            // Return detailed info for organizers
+            $tickets = $event->tickets()
+                ->withCount(['boughtTickets as sold'])
+                ->get()
+                ->map(function ($ticket) {
+                    $ticket->available = $ticket->quantity - $ticket->sold;
+                    return $ticket;
+                });
+        } else {
+            // Public viewing - just return basic ticket info
+            $tickets = $event->tickets()
+                ->withCount(['boughtTickets as sold'])
+                ->get()
+                ->map(function ($ticket) {
+                    $ticket->available = $ticket->quantity - $ticket->sold;
+                    return $ticket;
+                });
+        }
 
         return JsonResponse::success('Ticket types retrieved successfully', $tickets);
     }
